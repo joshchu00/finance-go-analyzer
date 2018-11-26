@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/joshchu00/finance-go-common/cassandra"
+	"github.com/joshchu00/finance-go-common/config"
 	"github.com/joshchu00/finance-go-common/kafka"
 	"github.com/joshchu00/finance-protobuf"
-	"github.com/spf13/viper"
 )
 
 func init() {
@@ -26,26 +25,13 @@ func init() {
 	log.SetPrefix("ANALYZER ")
 	log.SetFlags(log.LstdFlags | log.LUTC | log.Lshortfile)
 
-	// config
-	replacer := strings.NewReplacer(".", "_")
-	viper.SetEnvKeyReplacer(replacer)
-	viper.AutomaticEnv()
-	viper.SetConfigName("config") // name of config file (without extension)
-	// viper.AddConfigPath("/etc/appname/")   // path to look for the config file in
-	// viper.AddConfigPath("$HOME/.appname")  // call multiple times to add many search paths
-	viper.AddConfigPath(".")   // optionally look for config in the working directory
-	err = viper.ReadInConfig() // Find and read the config file
-	if err != nil {            // Handle errors reading the config file
-		log.Fatalln("FATAL", "Open config file error:", err)
-	}
-
 	// log config
-	log.Println("INFO", "environment:", viper.GetString("environment"))
-	log.Println("INFO", "cassandra.hosts:", viper.GetString("cassandra.hosts"))
-	log.Println("INFO", "cassandra.keyspace:", viper.GetString("cassandra.keyspace"))
-	log.Println("INFO", "kafka.bootstrap.servers:", viper.GetString("kafka.bootstrap.servers"))
-	log.Println("INFO", "kafka.topics.analyzer:", viper.GetString("kafka.topics.analyzer"))
-	log.Println("INFO", "kafka.topics.chooser:", viper.GetString("kafka.topics.chooser"))
+	log.Println("INFO", "Environment:", config.Environment())
+	log.Println("INFO", "CassandraHosts:", config.CassandraHosts())
+	log.Println("INFO", "CassandraKeyspace:", config.CassandraKeyspace())
+	log.Println("INFO", "KafkaBootstrapServers:", config.KafkaBootstrapServers())
+	log.Println("INFO", "KafkaAnalyzerTopic:", config.KafkaAnalyzerTopic())
+	log.Println("INFO", "KafkaChooserTopic:", config.KafkaChooserTopic())
 }
 
 var environment string
@@ -62,35 +48,23 @@ func process() {
 
 	var err error
 
-	// cassandra keyspace
-	var cassandraKeyspace string
-	cassandraKeyspace = fmt.Sprintf("%s_%s", viper.GetString("cassandra.keyspace"), environment)
-
 	// cassandra client
 	var cassandraClient *cassandra.Client
-	if cassandraClient, err = cassandra.NewClient(viper.GetString("cassandra.hosts"), cassandraKeyspace); err != nil {
+	if cassandraClient, err = cassandra.NewClient(config.CassandraHosts(), config.CassandraKeyspace()); err != nil {
 		return
 	}
 	defer cassandraClient.Close()
 
-	// analyzer topic
-	var analyzerTopic string
-	analyzerTopic = fmt.Sprintf("%s_%s", viper.GetString("kafka.topics.analyzer"), environment)
-
 	// analyzer consumer
 	var analyzerConsumer *kafka.Consumer
-	if analyzerConsumer, err = kafka.NewConsumer(viper.GetString("kafka.bootstrap.servers"), "analyzer", analyzerTopic); err != nil {
+	if analyzerConsumer, err = kafka.NewConsumer(config.KafkaBootstrapServers(), "analyzer", config.KafkaAnalyzerTopic()); err != nil {
 		return
 	}
 	defer analyzerConsumer.Close()
 
-	// chooser topic
-	// var chooserTopic string
-	// chooserTopic = fmt.Sprintf("%s_%s", viper.GetString("kafka.topics.chooser"), environment)
-
 	// chooser producer
 	// var chooserProducer *kafka.Producer
-	// if chooserProducer, err = kafka.NewProducer(viper.GetString("kafka.bootstrap.servers")); err != nil {
+	// if chooserProducer, err = kafka.NewProducer(config.KafkaBootstrapServers()); err != nil {
 	// 	return
 	// }
 	// defer chooserProducer.Close()
@@ -136,7 +110,7 @@ func main() {
 	log.Println("INFO", "Starting analyzer...")
 
 	// environment
-	environment = viper.GetString("environment")
+	environment = config.Environment()
 
 	if environment != "dev" && environment != "test" && environment != "stg" && environment != "prod" {
 		log.Panicln("PANIC", "Unknown environment")
