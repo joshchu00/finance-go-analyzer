@@ -3,27 +3,23 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
 	"time"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/joshchu00/finance-go-common/cassandra"
 	"github.com/joshchu00/finance-go-common/config"
 	"github.com/joshchu00/finance-go-common/kafka"
+	"github.com/joshchu00/finance-go-common/logger"
 	"github.com/joshchu00/finance-protobuf"
 )
 
 func init() {
 
-	// log
-	logfile, err := os.OpenFile("logfile.log", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
-	if err != nil {
-		log.Fatalln("FATAL", "Open log file error:", err)
-	}
+	// config
+	config.Init()
 
-	log.SetOutput(logfile)
-	log.SetPrefix("ANALYZER ")
-	log.SetFlags(log.LstdFlags | log.LUTC | log.Lshortfile)
+	// logger
+	logger.Init(config.LogDirectory(), "analyzer")
 
 	// log config
 	log.Println("INFO", "Environment:", config.Environment())
