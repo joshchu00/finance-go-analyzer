@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -22,12 +21,15 @@ func init() {
 	logger.Init(config.LogDirectory(), "analyzer")
 
 	// log config
-	log.Println("INFO", "Environment:", config.Environment())
-	log.Println("INFO", "CassandraHosts:", config.CassandraHosts())
-	log.Println("INFO", "CassandraKeyspace:", config.CassandraKeyspace())
-	log.Println("INFO", "KafkaBootstrapServers:", config.KafkaBootstrapServers())
-	log.Println("INFO", "KafkaAnalyzerTopic:", config.KafkaAnalyzerTopic())
-	log.Println("INFO", "KafkaChooserTopic:", config.KafkaChooserTopic())
+	logger.Info(fmt.Sprintf("%s: %s", "Environment", config.Environment()))
+	logger.Info(fmt.Sprintf("%s: %s", "CassandraHosts", config.CassandraHosts()))
+	logger.Info(fmt.Sprintf("%s: %s", "CassandraKeyspace", config.CassandraKeyspace()))
+	logger.Info(fmt.Sprintf("%s: %s", "KafkaBootstrapServers", config.KafkaBootstrapServers()))
+	logger.Info(fmt.Sprintf("%s: %s", "KafkaAnalyzerTopic", config.KafkaAnalyzerTopic()))
+	logger.Info(fmt.Sprintf("%s: %s", "KafkaChooserTopic", config.KafkaChooserTopic()))
+
+	// twse
+	// twse.Init()
 }
 
 var environment string
@@ -37,7 +39,7 @@ func process() {
 	if environment == "prod" {
 		defer func() {
 			if err := recover(); err != nil {
-				log.Println("PANIC", "recover", err)
+				logger.Panic(fmt.Sprintf("recover %v", err))
 			}
 		}()
 	}
@@ -46,22 +48,25 @@ func process() {
 
 	// cassandra client
 	var cassandraClient *cassandra.Client
-	if cassandraClient, err = cassandra.NewClient(config.CassandraHosts(), config.CassandraKeyspace()); err != nil {
-		return
+	cassandraClient, err = cassandra.NewClient(config.CassandraHosts(), config.CassandraKeyspace())
+	if err != nil {
+		logger.Panic(fmt.Sprintf("cassandra.NewClient %v", err))
 	}
 	defer cassandraClient.Close()
 
 	// analyzer consumer
 	var analyzerConsumer *kafka.Consumer
-	if analyzerConsumer, err = kafka.NewConsumer(config.KafkaBootstrapServers(), "analyzer", config.KafkaAnalyzerTopic()); err != nil {
-		return
+	analyzerConsumer, err = kafka.NewConsumer(config.KafkaBootstrapServers(), "analyzer", config.KafkaAnalyzerTopic())
+	if err != nil {
+		logger.Panic(fmt.Sprintf("kafka.NewConsumer %v", err))
 	}
 	defer analyzerConsumer.Close()
 
 	// chooser producer
 	// var chooserProducer *kafka.Producer
-	// if chooserProducer, err = kafka.NewProducer(config.KafkaBootstrapServers()); err != nil {
-	// 	return
+	// chooserProducer, err = kafka.NewProducer(config.KafkaBootstrapServers())
+	// if err != nil {
+	// 	logger.Panic(fmt.Sprintf("kafka.NewProducer %v", err))
 	// }
 	// defer chooserProducer.Close()
 
@@ -75,41 +80,41 @@ func process() {
 		var value []byte
 
 		if topic, partition, offset, value, err = analyzerConsumer.Consume(); err != nil {
-			log.Panicln("PANIC", "Consume", err)
+			logger.Panic(fmt.Sprintf("Consume %v", err))
 		}
 
 		if err = proto.Unmarshal(value, message); err != nil {
-			log.Panicln("PANIC", "Unmarshal", err)
+			logger.Panic(fmt.Sprintf("proto.Unmarshal %v", err))
 		}
 
 		switch message.Exchange {
 		case "TWSE":
-			fmt.Println(message)
+			logger.Info(message.String())
 			// if err = twse.Process(message.Period, datetime.GetTime(message.Datetime), message.Path, message.IsFinished, cassandraClient, analyzerProducer, analyzerTopic); err != nil {
 			// 	log.Panicln("PANIC", "Process", err)
 			// }
 		default:
-			log.Panicln("PANIC", "Unknown exchange")
+			logger.Panic("Unknown exchange")
 		}
 
 		// strange
 		offset++
 
 		if err = analyzerConsumer.CommitOffset(topic, partition, offset); err != nil {
-			log.Panicln(err)
+			logger.Panic(fmt.Sprintf("CommitOffset %v", err))
 		}
 	}
 }
 
 func main() {
 
-	log.Println("INFO", "Starting analyzer...")
+	logger.Info("Starting analyzer...")
 
 	// environment
 	environment = config.Environment()
 
 	if environment != "dev" && environment != "test" && environment != "stg" && environment != "prod" {
-		log.Panicln("PANIC", "Unknown environment")
+		logger.Panic("Unknown environment")
 	}
 
 	for {
