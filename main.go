@@ -36,7 +36,7 @@ var environment string
 
 func process() {
 
-	if environment == "prod" {
+	if environment == config.EnvironmentProd {
 		defer func() {
 			if err := recover(); err != nil {
 				logger.Panic(fmt.Sprintf("recover %v", err))
@@ -79,19 +79,22 @@ func process() {
 		var offset int64
 		var value []byte
 
-		if topic, partition, offset, value, err = analyzerConsumer.Consume(); err != nil {
+		topic, partition, offset, value, err = analyzerConsumer.Consume()
+		if err != nil {
 			logger.Panic(fmt.Sprintf("Consume %v", err))
 		}
 
-		if err = proto.Unmarshal(value, message); err != nil {
+		err = proto.Unmarshal(value, message)
+		if err != nil {
 			logger.Panic(fmt.Sprintf("proto.Unmarshal %v", err))
 		}
 
 		switch message.Exchange {
 		case "TWSE":
 			logger.Info(message.String())
-			// if err = twse.Process(message.Period, datetime.GetTime(message.Datetime), message.Path, message.IsFinished, cassandraClient, analyzerProducer, analyzerTopic); err != nil {
-			// 	log.Panicln("PANIC", "Process", err)
+			// err = twse.Process(message.Period, datetime.GetTime(message.Datetime), message.Path, message.IsFinished, cassandraClient, analyzerProducer, analyzerTopic)
+			// if err != nil {
+			// 	logger.Panic(fmt.Sprintf("Process %v", err))
 			// }
 		default:
 			logger.Panic("Unknown exchange")
@@ -100,7 +103,8 @@ func process() {
 		// strange
 		offset++
 
-		if err = analyzerConsumer.CommitOffset(topic, partition, offset); err != nil {
+		err = analyzerConsumer.CommitOffset(topic, partition, offset)
+		if err != nil {
 			logger.Panic(fmt.Sprintf("CommitOffset %v", err))
 		}
 	}
@@ -111,9 +115,9 @@ func main() {
 	logger.Info("Starting analyzer...")
 
 	// environment
-	environment = config.Environment()
-
-	if environment != "dev" && environment != "test" && environment != "stg" && environment != "prod" {
+	switch environment = config.Environment(); environment {
+	case config.EnvironmentDev, config.EnvironmentTest, config.EnvironmentStg, config.EnvironmentProd:
+	default:
 		logger.Panic("Unknown environment")
 	}
 
@@ -123,7 +127,7 @@ func main() {
 
 		time.Sleep(3 * time.Second)
 
-		if environment != "prod" {
+		if environment != config.EnvironmentProd {
 			break
 		}
 	}
