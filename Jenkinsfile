@@ -1,22 +1,11 @@
-node {
-  def analyzerImage
+@Library("library") _
 
-  stage('Git Pull') {
-    git url: 'https://github.com/joshchu00/finance-go-analyzer.git', branch: 'develop'
-  }
-  stage('Go Build') {
-    sh "${tool name: 'go-1.11', type: 'go'}/bin/go build -a -o main"
-  }
-  stage('Docker Build') {
-    docker.withTool('docker-latest') {
-      analyzerImage = docker.build('docker.io/joshchu00/finance-go-analyzer')
-    }
-  }
-  stage('Docker Push') {
-    docker.withTool('docker-latest') {
-      docker.withRegistry('', 'DockerHub') {
-        analyzerImage.push()
-      }
-    }
-  }
+build {
+  [
+    gitURL = 'https://github.com/joshchu00/finance-go-analyzer.git',
+    gitBranch = 'develop',
+    buildLanguage = 'go',
+    buildImage = 'joshchu00/go-build-kafka:1.11.5-alpine',
+    dockerName = 'joshchu00/finance-go-analyzer'
+  ]
 }
