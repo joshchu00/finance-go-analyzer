@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/joshchu00/finance-go-analyzer/twse"
 	"github.com/joshchu00/finance-go-common/cassandra"
 	"github.com/joshchu00/finance-go-common/config"
 	"github.com/joshchu00/finance-go-common/kafka"
@@ -30,7 +31,7 @@ func init() {
 	logger.Info(fmt.Sprintf("%s: %s", "KafkaChooserTopic", config.KafkaChooserTopic()))
 
 	// twse
-	// twse.Init()
+	twse.Init()
 }
 
 var environmentName string
@@ -64,12 +65,12 @@ func process() {
 	defer analyzerConsumer.Close()
 
 	// chooser producer
-	// var chooserProducer *kafka.Producer
-	// chooserProducer, err = kafka.NewProducer(config.KafkaBootstrapServers())
-	// if err != nil {
-	// 	logger.Panic(fmt.Sprintf("kafka.NewProducer %v", err))
-	// }
-	// defer chooserProducer.Close()
+	var chooserProducer *kafka.Producer
+	chooserProducer, err = kafka.NewProducer(config.KafkaBootstrapServers())
+	if err != nil {
+		logger.Panic(fmt.Sprintf("kafka.NewProducer %v", err))
+	}
+	defer chooserProducer.Close()
 
 	for {
 
@@ -92,11 +93,10 @@ func process() {
 
 		switch message.Exchange {
 		case "TWSE":
-			logger.Info(message.String())
-			// err = twse.Process(message.Period, datetime.GetTime(message.Datetime), message.Path, message.IsFinished, cassandraClient, analyzerProducer, analyzerTopic)
-			// if err != nil {
-			// 	logger.Panic(fmt.Sprintf("Process %v", err))
-			// }
+			err = twse.Process(message.Symbol, message.Period, message.Datetime, cassandraClient, chooserProducer, config.KafkaChooserTopic())
+			if err != nil {
+				logger.Panic(fmt.Sprintf("Process %v", err))
+			}
 		default:
 			logger.Panic("Unknown exchange")
 		}
