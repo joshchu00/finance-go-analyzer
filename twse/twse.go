@@ -15,7 +15,6 @@ import (
 	"github.com/joshchu00/finance-go-common/kafka"
 	"github.com/joshchu00/finance-go-common/logger"
 	protobuf "github.com/joshchu00/finance-protobuf"
-	talib "github.com/markcheno/go-talib"
 	inf "gopkg.in/inf.v0"
 )
 
@@ -61,13 +60,13 @@ func Process(symbol string, period string, ts int64, client *cassandra.Client, p
 		closes = append(closes, close)
 	}
 
-	for _, idc := range indicators {
+	for _, idct := range indicators {
 
 		var values []float64
 
-		switch idc.Type {
+		switch idct.Type {
 		case indicator.SMA:
-			values = talib.Ma(closes, int(idc.Value), talib.SMA)
+			values = indicator.CalculateSMA(closes, idct.Period)
 		default:
 			err = errors.New("Unknown indicator type")
 			return
@@ -92,7 +91,7 @@ func Process(symbol string, period string, ts int64, client *cassandra.Client, p
 						},
 						Datetime: rr.Datetime,
 					},
-					idc.Column,
+					idct.Column,
 					value,
 				)
 			}
