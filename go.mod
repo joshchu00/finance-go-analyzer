@@ -3,8 +3,9 @@ module github.com/joshchu00/finance-go-analyzer
 require (
 	github.com/golang/protobuf v1.2.0
 	github.com/golang/snappy v0.0.0-20180518054509-2e65f85255db // indirect
-	github.com/joshchu00/finance-go-common v0.1.1-0.20190407024656-3b55ebbca6ce
-	github.com/joshchu00/finance-protobuf v0.1.1-0.20181216012137-9957535ab4d4
+	github.com/joshchu00/finance-go-common v0.1.1-0.20190415133049-4c70c94169e9
+	github.com/joshchu00/finance-protobuf v0.1.1-0.20190110032506-7ccfb2f0b013
+	github.com/markcheno/go-talib v0.0.0-20190307022042-cd53a9264d70
 	github.com/spf13/afero v1.2.0 // indirect
 	github.com/spf13/viper v1.3.1 // indirect
 	github.com/stretchr/testify v1.3.0 // indirect
