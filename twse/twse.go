@@ -3,9 +3,7 @@ package twse
 import (
 	"errors"
 	"fmt"
-	"log"
 	"strconv"
-	"time"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/joshchu00/finance-go-common/cassandra"
@@ -18,21 +16,11 @@ import (
 	inf "gopkg.in/inf.v0"
 )
 
-var location *time.Location
-var indicators []*indicator.Indicator
-
-func Init() {
-	var err error
-	location, err = time.LoadLocation("Asia/Taipei")
-	if err != nil {
-		log.Fatalln("FATAL", "Get location error:", err)
-	}
-	indicators = []*indicator.Indicator{indicator.SMA0060, indicator.SMA0120, indicator.SMA0240}
-}
-
 func Process(symbol string, period string, ts int64, client *cassandra.Client, producer *kafka.Producer, topic string) (err error) {
 
-	logger.Info(fmt.Sprintf("%s: %s", "Starting twse process...", datetime.GetTimeString(ts, location)))
+	logger.Info(fmt.Sprintf("%s: %d %s", "Starting twse.Process...", ts, symbol))
+
+	indicators := []*indicator.Indicator{indicator.SMA0060, indicator.SMA0120, indicator.SMA0240}
 
 	var rrs []*cassandra.RecordRow
 
@@ -112,7 +100,7 @@ func Process(symbol string, period string, ts int64, client *cassandra.Client, p
 		return
 	}
 
-	producer.Produce(topic, 0, bytes)
+	err = producer.Produce(topic, 0, bytes)
 
 	return
 }

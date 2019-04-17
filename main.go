@@ -29,9 +29,6 @@ func init() {
 	logger.Info(fmt.Sprintf("%s: %s", "KafkaBootstrapServers", config.KafkaBootstrapServers()))
 	logger.Info(fmt.Sprintf("%s: %s", "KafkaAnalyzerTopic", config.KafkaAnalyzerTopic()))
 	logger.Info(fmt.Sprintf("%s: %s", "KafkaChooserTopic", config.KafkaChooserTopic()))
-
-	// twse
-	twse.Init()
 }
 
 var environmentName string
@@ -93,7 +90,14 @@ func process() {
 
 		switch message.Exchange {
 		case "TWSE":
-			err = twse.Process(message.Symbol, message.Period, message.Datetime, cassandraClient, chooserProducer, config.KafkaChooserTopic())
+			err = twse.Process(
+				message.Symbol,
+				message.Period,
+				message.Datetime,
+				cassandraClient,
+				chooserProducer,
+				config.KafkaChooserTopic(),
+			)
 			if err != nil {
 				logger.Panic(fmt.Sprintf("Process %v", err))
 			}
