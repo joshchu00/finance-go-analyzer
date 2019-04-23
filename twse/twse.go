@@ -20,7 +20,14 @@ func Process(symbol string, period string, ts int64, client *cassandra.Client, p
 
 	logger.Info(fmt.Sprintf("%s: %d %s", "Starting twse.Process...", ts, symbol))
 
-	indicators := []*indicator.Indicator{indicator.SMA0060, indicator.SMA0120, indicator.SMA0240}
+	indicators := []*indicator.Indicator{
+		indicator.SMA0005,
+		indicator.SMA0010,
+		indicator.SMA0020,
+		indicator.SMA0060,
+		indicator.SMA0120,
+		indicator.SMA0240,
+	}
 
 	var rrs []*cassandra.RecordRow
 
